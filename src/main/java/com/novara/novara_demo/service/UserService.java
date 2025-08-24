@@ -4,6 +4,7 @@ import com.novara.novara_demo.model.dto.NewUserDTO;
 import com.novara.novara_demo.model.dto.ShowUserDTO;
 import com.novara.novara_demo.model.entity.User;
 import com.novara.novara_demo.repository.UserRepository;
+import com.novara.novara_demo.repository.UserSearchRepository;
 import com.novara.novara_demo.util.mapper.UserMapperCustom;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,11 +22,13 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final UserMapperCustom userMapper;
+    private final UserSearchRepository userSearchRepository;
 
-    public UserService(UserRepository userRepository, UserMapperCustom userMapper) {
+    public UserService(UserRepository userRepository, UserMapperCustom userMapper, UserSearchRepository userSearchRepository) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
 
+        this.userSearchRepository = userSearchRepository;
     }
 
     public ShowUserDTO createUser(NewUserDTO dto) {
@@ -52,6 +55,11 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User with email " + email + " not found"));
     }
 
+    public List<ShowUserDTO> searchUserByEmail(String email) {
+        List<User> users = userSearchRepository.searchByEmail(email, 5);
+        return users.stream().map(userMapper::toShowUserDTO).toList();
+    }
+
 
     private UserDetails entityToUserDetails(User entity) {
         return new org.springframework.security.core.userdetails.User(
@@ -62,5 +70,7 @@ public class UserService implements UserDetailsService {
                         .collect(Collectors.toList())
         );
     }
+
+
 
 }

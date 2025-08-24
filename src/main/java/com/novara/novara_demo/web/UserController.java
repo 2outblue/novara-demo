@@ -35,6 +35,13 @@ public class UserController {
         return ResponseEntity.ok(userDto);
     }
 
+    @GetMapping("/search/{email}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ShowUserDTO>> searchUserByEmail(@PathVariable String email) {
+        List<ShowUserDTO> dtos = userService.searchUserByEmail(email);
+        return ResponseEntity.ok(dtos);
+    }
+
     @PostMapping
     public ResponseEntity<ShowUserDTO> createUser(@RequestBody NewUserDTO userDto, UriComponentsBuilder uriBuilder) {
         ShowUserDTO newUser = userService.createUser(userDto);

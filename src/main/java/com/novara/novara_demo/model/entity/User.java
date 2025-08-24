@@ -5,6 +5,8 @@ import com.novara.novara_demo.model.entity.enums.UserRoleEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import java.sql.Types;
 import java.util.Set;
@@ -12,6 +14,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "users")
+@Indexed
 public class User {
 
     @Id
@@ -19,6 +22,7 @@ public class User {
     private UUID id;
 
     @NotNull
+    @FullTextField
     private String email;
     private String firstName;
     private String lastName;
