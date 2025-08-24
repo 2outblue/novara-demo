@@ -1,0 +1,36 @@
+spring:
+  jpa:
+    show-sql: true
+    open-in-view: 'false'
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: 'TRUE'
+    hibernate:
+      ddl-auto: update
+  sql:
+    init:
+      mode: always
+
+  datasource:
+    username: ${MYSQL_USERNAME1:root}
+    url: jdbc:mysql://localhost:3306/novara-user-test?allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
+    driverClassName: com.mysql.cj.jdbc.Driver
+    password: ${MYSQL_PASS1:1q2w3e4r}
+    default.admin.pass: ${DEFAULT_ADMIN_PASS}
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.arm.jdbc.bind: ERROR
+    org.springframework.security: ERROR
+
+server:
+  port: 8095
+
+app:
+  jwt:
+    issuer: "novara-demo-api"
+    secret: "${APP_JWT_SECRET:change-me-please-change-me-please-32b-min}"
+    expiry-minutes: 60
