@@ -22,7 +22,7 @@ public class User {
     private UUID id;
 
     @NotNull
-    @FullTextField
+    @FullTextField(analyzer = "ngram-english")
     private String email;
     private String firstName;
     private String lastName;

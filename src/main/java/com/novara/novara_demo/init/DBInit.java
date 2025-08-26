@@ -2,6 +2,7 @@ package com.novara.novara_demo.init;
 
 import com.novara.novara_demo.model.entity.User;
 import com.novara.novara_demo.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,9 @@ public class DBInit implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${spring.jpa.properties.hibernate.search.backend.analysis.configurer}")
+    private String testValue;
+
     public DBInit(UserRepository userRepository, PasswordEncoder passwordEncoder, PasswordEncoder passwordEncoder1) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder1;
@@ -21,6 +25,7 @@ public class DBInit implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         initUsers();
+        System.out.println(testValue);
     }
 
     private void initUsers() {

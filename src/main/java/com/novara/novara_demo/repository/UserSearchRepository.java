@@ -22,7 +22,7 @@ public class UserSearchRepository extends SimpleJpaRepository<User, UUID> {
     public List<User> searchByEmail(String email, int limit) {
         SearchResult<User> result = Search.session(entityManager)
                 .search(User.class)
-                .where(f -> f.match().field("email").matching(email).fuzzy(2))
+                .where(f -> f.match().field("email").matching(email))
                 .fetch(limit);
         return result.hits();
     }

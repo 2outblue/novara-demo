@@ -7,6 +7,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: 'TRUE'
+        search:
+          backend:
+            analysis:
+              configurer: com.novara.novara_demo.config.hibernate_search.NgramAnalysisConfigurer
     hibernate:
       ddl-auto: update
   sql:
@@ -34,3 +38,4 @@ app:
     issuer: "novara-demo-api"
     secret: "${APP_JWT_SECRET:change-me-please-change-me-please-32b-min}"
     expiry-minutes: 60
+
