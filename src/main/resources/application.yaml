@@ -28,6 +28,7 @@ logging:
   level:
     org.hibernate.SQL: DEBUG
     org.hibernate.arm.jdbc.bind: ERROR
+    org.springframework: ERROR
     org.springframework.security: ERROR
 
 server:

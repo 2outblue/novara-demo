@@ -5,15 +5,15 @@ import com.novara.novara_demo.model.dto.ShowUserDTO;
 import com.novara.novara_demo.model.entity.User;
 import com.novara.novara_demo.repository.UserRepository;
 import com.novara.novara_demo.repository.UserSearchRepository;
-import com.novara.novara_demo.util.mapper.UserMapperCustom;
+import com.novara.novara_demo.util.mapper.UserMapper;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -21,19 +21,22 @@ import java.util.stream.Collectors;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final UserMapperCustom userMapper;
+    private final UserMapper userMapper;
     private final UserSearchRepository userSearchRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, UserMapperCustom userMapper, UserSearchRepository userSearchRepository) {
+    public UserService(UserRepository userRepository, UserMapper userMapper, UserSearchRepository userSearchRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
 
         this.userSearchRepository = userSearchRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public ShowUserDTO createUser(NewUserDTO dto) {
-        User newUser = this.userMapper.toEntity(dto);
+        User newUser = this.userMapper.toUser(dto);
         newUser.setId(UUID.randomUUID());
+        newUser.setPassword(passwordEncoder.encode(newUser.getPassword()));
         User savedUser = this.userRepository.save(newUser);
         return userMapper.toShowUserDTO(savedUser);
     }
