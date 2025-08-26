@@ -22,9 +22,11 @@ public class User {
     private UUID id;
 
     @NotNull
-    @FullTextField(analyzer = "ngram-english")
+    @FullTextField(analyzer = "edgeNgram-english")
     private String email;
+    @FullTextField(analyzer = "ngram-english")
     private String firstName;
+    @FullTextField(analyzer = "ngram-english")
     private String lastName;
     @NotNull
     private String password;

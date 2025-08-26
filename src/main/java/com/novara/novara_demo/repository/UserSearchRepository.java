@@ -26,4 +26,12 @@ public class UserSearchRepository extends SimpleJpaRepository<User, UUID> {
                 .fetch(limit);
         return result.hits();
     }
+
+    public List<User> searchByFirstName(String firstName, int limit) {
+        SearchResult<User> result = Search.session(entityManager)
+                .search(User.class)
+                .where(f -> f.match().field("firstName").matching(firstName))
+                .fetch(limit);
+        return result.hits();
+    }
 }

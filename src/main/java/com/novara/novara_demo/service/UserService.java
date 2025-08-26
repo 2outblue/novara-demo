@@ -60,6 +60,11 @@ public class UserService implements UserDetailsService {
         return users.stream().map(userMapper::toShowUserDTO).toList();
     }
 
+    public List<ShowUserDTO> searchUserByFirstName(String firstName) {
+        List<User> users = userSearchRepository.searchByFirstName(firstName, 6);
+        return users.stream().map(userMapper::toShowUserDTO).toList();
+    }
+
 
     private UserDetails entityToUserDetails(User entity) {
         return new org.springframework.security.core.userdetails.User(

@@ -10,7 +10,7 @@ spring:
         search:
           backend:
             analysis:
-              configurer: com.novara.novara_demo.config.hibernate_search.NgramAnalysisConfigurer
+              configurer: com.novara.novara_demo.config.hibernate_search.CompositeAnalysisConfigurer
     hibernate:
       ddl-auto: update
   sql:

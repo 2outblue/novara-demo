@@ -35,10 +35,17 @@ public class UserController {
         return ResponseEntity.ok(userDto);
     }
 
-    @GetMapping("/search/{email}")
+    @GetMapping("/search/email/{email}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ShowUserDTO>> searchUserByEmail(@PathVariable String email) {
         List<ShowUserDTO> dtos = userService.searchUserByEmail(email);
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/search/firstName/{firstName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ShowUserDTO>> searchUserByFirstName(@PathVariable String firstName) {
+        List<ShowUserDTO> dtos = userService.searchUserByFirstName(firstName);
         return ResponseEntity.ok(dtos);
     }
 
