@@ -21,6 +21,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -49,10 +50,23 @@ public class SecurityConfiguration {
                                 .jwtAuthenticationConverter(jwtAuthConverter())
                         )
                         .authenticationEntryPoint(new AuthenticationEntryPointImpl())
+                        .bearerTokenResolver(request -> {
+                            if (request.getRequestURI().equals("/auth/refresh")) {
+                                System.out.println(request.getRequestURI());
+                                return null;
+                            }
+                            return new DefaultBearerTokenResolver().resolve(request);
+                        })
                 );
         return http.build();
     }
 
+    // VERIFY THIS IS TRUE
+    // When an incoming token is validated, the 'roles' claim that
+    // is set when building the token, gets 'converted' here - basically
+    // adds a prefix so Spring can understand the role and you can use
+    // @PreAuthorize for example without having to do (hasRole("ROLE_ADMIN"))
+    // so i guess its just for quality of life ?
     private JwtAuthenticationConverter jwtAuthConverter() {
         var gac = new JwtGrantedAuthoritiesConverter();
         gac.setAuthorityPrefix("ROLE_");
