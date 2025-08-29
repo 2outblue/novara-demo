@@ -5,11 +5,13 @@ import com.novara.novara_demo.config.JWKAlgorithmImpl;
 import com.novara.novara_demo.model.dto.NewTokenAuthenticationDTO;
 import com.novara.novara_demo.model.entity.RefreshToken;
 import com.novara.novara_demo.model.entity.User;
+import com.novara.novara_demo.model.exception.ExpiredRefreshTokenException;
+import com.novara.novara_demo.model.exception.RefreshTokenException;
+import com.novara.novara_demo.model.exception.UserNotFoundException;
 import com.novara.novara_demo.repository.RefreshTokenRepository;
 import com.novara.novara_demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -19,9 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
@@ -32,7 +32,10 @@ public class AuthService {
     private String issuer;
 
     @Value("${app.jwt.expiry-minutes}")
-    private long expiryMinutes;
+    private long jwtExpiryMinutes;
+
+    @Value("${app.jwt.refresh-expiry-hours}")
+    private long refreshExpiryHours;
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -46,44 +49,52 @@ public class AuthService {
     }
 
     public NewTokenAuthenticationDTO generateNewTokenAuthentication(Authentication authentication) {
-        String tokenHash = generateRefreshToken(authentication.getName());
+        String tokenHash = generateNewRefreshToken(authentication.getName());
         String jwt = generateJwtByUsername(authentication.getName());
         return new NewTokenAuthenticationDTO(tokenHash, jwt);
     }
 
     public NewTokenAuthenticationDTO validateRefreshToken(String rawRefreshToken) {
-//        String sanitizedToken = sanitizeUuid(rawRefreshToken);
         if (rawRefreshToken == null || rawRefreshToken.isBlank() || !rawRefreshToken.contains(".")) {
-            throw new IllegalArgumentException("Invalid refresh token format");
+            throw new RefreshTokenException();
         }
         String[] tokenParams = rawRefreshToken.split("\\.");
-        if (tokenParams.length != 2) {throw new IllegalArgumentException("Invalid refresh token format");}
+        if (tokenParams.length != 2) {throw new RefreshTokenException();}
 
         String publicKey = tokenParams[0];
         String rawToken = tokenParams[1];
 
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByLookup(publicKey)
-                .orElseThrow(() -> new RuntimeException("No such refresh token"));
-        if (refreshTokenEntity.getExpiryDate().isBefore(Instant.now())) {
-            throw new RuntimeException("Expired refresh token");
-        }
-        if (!passwordEncoder.matches(rawToken, refreshTokenEntity.getToken())) {
-            throw new IllegalArgumentException("Invalid refresh token");
-        }
-        User userEntity = userRepository.findByEmail(refreshTokenEntity.getUsername())
-                .orElseThrow(() -> new RuntimeException("Could not find user associated with refresh token"));
+                .orElseThrow(() -> new RefreshTokenException());
 
-        String newRefreshToken = generateRefreshToken(userEntity.getEmail());
+        if (refreshTokenEntity.isRevoked()) {
+            invalidateTokenFamily(refreshTokenEntity.getFamilyId());
+            throw new RefreshTokenException();
+        }
+
+        if (!passwordEncoder.matches(rawToken, refreshTokenEntity.getToken())) {
+            throw new RefreshTokenException();
+        }
+
+        if (refreshTokenEntity.getExpiryDate().isBefore(Instant.now())) {
+            throw new ExpiredRefreshTokenException();
+        }
+
+//        TODO: Check if user is disabled (also in the JWT generation)
+        User userEntity = userRepository.findByEmail(refreshTokenEntity.getUsername())
+                .orElseThrow(() -> new UserNotFoundException("User not available"));
+
+        String newRefreshToken = refreshExistingToken(refreshTokenEntity);
         String newJwt = generateJwtByUsername(userEntity.getEmail());
         return new NewTokenAuthenticationDTO(newRefreshToken, newJwt);
     }
 
     private String generateJwtByUsername(String username) {
         var now = Instant.now();
-        var expiresAt = now.plusSeconds(15 * 60);
+        var expiresAt = now.plusSeconds(jwtExpiryMinutes * 60);
 
         User userEntity = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("Could not generate JWT. No associated user was found."));
+                .orElseThrow(() -> new UserNotFoundException("User not available"));
 
         var roles = userEntity.getRoles();
         var claims = JwtClaimsSet.builder()
@@ -99,24 +110,43 @@ public class AuthService {
         return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 
-    private String generateRefreshToken(String username) {
+    private String generateNewRefreshToken(String username) {
         var now = Instant.now();
-        var refreshTokenExpiry = now.plusSeconds(24 * 60 * 60);
+        var expiry = now.plusSeconds( refreshExpiryHours * 60 * 60);
 
+        String encodedSecret = getRandomBase64Secret();
+        String encryptedSecret = passwordEncoder.encode(encodedSecret);
+        String publicKey = Base64.encode(UUID.randomUUID().toString()).toString();
+        UUID familyId = UUID.randomUUID();
+        RefreshToken newToken = new RefreshToken(publicKey, encryptedSecret, username, expiry, familyId);
+
+        refreshTokenRepository.save(newToken);
+        return publicKey + "." + encodedSecret;
+    }
+
+    private String refreshExistingToken(RefreshToken oldToken) {
+        String encodedSecret = getRandomBase64Secret();
+        String encryptedSecret = passwordEncoder.encode(encodedSecret);
+        String publicKey = Base64.encode(UUID.randomUUID().toString()).toString();
+        String username = oldToken.getUsername();
+        Instant expiryDate = oldToken.getExpiryDate();
+        UUID familyId = oldToken.getFamilyId();
+
+        RefreshToken newToken = new RefreshToken(publicKey, encryptedSecret, username, expiryDate, familyId);
+        refreshTokenRepository.save(newToken);
+        refreshTokenRepository.revokeByPublicKey(oldToken.getLookup());
+        return publicKey + "." + encodedSecret;
+    }
+
+    private String getRandomBase64Secret() {
         SecureRandom random = new SecureRandom();
         byte[] secret = new byte[32];
         random.nextBytes(secret);
-        String encodedSecret = Base64.encode(secret).toString();
-        String publicKey = Base64.encode(UUID.randomUUID().toString()).toString();
-        RefreshToken refreshTokenEntity = new RefreshToken(passwordEncoder.encode(encodedSecret), publicKey);
-        refreshTokenEntity.setUsername(username);
-        refreshTokenEntity.setExpiryDate(refreshTokenExpiry);
+        return Base64.encode(secret).toString();
+    }
 
-        RefreshToken savedEntity = refreshTokenRepository.save(refreshTokenEntity);
-        if (!passwordEncoder.matches(encodedSecret, savedEntity.getToken())) {
-            throw new RuntimeException("Could not generate refresh token");
-        }
-        return publicKey + "." + encodedSecret;
+    private void invalidateTokenFamily(UUID familyId) {
+        refreshTokenRepository.revokeByFamilyId(familyId);
     }
 
 }

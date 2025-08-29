@@ -1,7 +1,9 @@
 package com.novara.novara_demo.model.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
 
+import java.sql.Types;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -13,19 +15,27 @@ public class RefreshToken {
     private Long id;
     @Column(nullable = false, unique = true)
     private String lookup;
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String token;
     @Column(nullable = false)
     private String username;
     @Column(nullable = false)
     private Instant expiryDate;
+    @Column(nullable = false)
+    @JdbcTypeCode(Types.VARCHAR)
+    private UUID familyId;
+    @Column(nullable = false)
+    private boolean revoked = false;
 
     public RefreshToken() {
     }
 
-    public RefreshToken(String token, String publicKey) {
+    public RefreshToken(String lookup, String token, String username, Instant expiryDate, UUID familyId) {
+        this.lookup = lookup;
         this.token = token;
-        this.lookup = publicKey;
+        this.username = username;
+        this.expiryDate = expiryDate;
+        this.familyId = familyId;
     }
 
     public Long getId() {
@@ -70,6 +80,24 @@ public class RefreshToken {
 
     public RefreshToken setExpiryDate(Instant expiryDate) {
         this.expiryDate = expiryDate;
+        return this;
+    }
+
+    public UUID getFamilyId() {
+        return familyId;
+    }
+
+    public RefreshToken setFamilyId(UUID familyId) {
+        this.familyId = familyId;
+        return this;
+    }
+
+    public boolean isRevoked() {
+        return revoked;
+    }
+
+    public RefreshToken setRevoked(boolean revoked) {
+        this.revoked = revoked;
         return this;
     }
 }
