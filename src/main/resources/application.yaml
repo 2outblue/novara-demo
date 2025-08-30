@@ -29,6 +29,7 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.arm.jdbc.bind: ERROR
     org.springframework: ERROR
+    org.springframework.boot.actuate: DEBUG
     org.springframework.security: ERROR
 
 server:
@@ -41,3 +42,14 @@ app:
     expiry-minutes: 10
     refresh-expiry-hours: 24
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      base-path: /manage
+
+info:
+  app:
+    name: Demo Spring API
+    version: 0.9
