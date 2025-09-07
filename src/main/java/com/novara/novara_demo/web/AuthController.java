@@ -4,6 +4,7 @@ import com.novara.novara_demo.model.dto.NewTokenAuthenticationDTO;
 import com.novara.novara_demo.model.dto.UserLoginDTO;
 import com.novara.novara_demo.service.AuthService;
 import com.novara.novara_demo.service.UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +22,8 @@ public class AuthController {
 
     private final AuthenticationManager authManager;
     private final AuthService authService;
+    @Value("${app.jwt.expiry-minutes}")
+    private long jwtExpiryMinutes;
 
     public AuthController(AuthenticationManager authManager, AuthService authService) {
         this.authManager = authManager;
@@ -37,6 +40,7 @@ public class AuthController {
         NewTokenAuthenticationDTO authDTO = authService.generateNewTokenAuthentication(authentication);
         return ResponseEntity.ok(OAuth2AccessTokenResponse
                 .withToken(authDTO.getJwt())
+                .expiresIn(jwtExpiryMinutes * 60L)
                 .refreshToken(authDTO.getRefreshToken())
                 .tokenType(OAuth2AccessToken.TokenType.BEARER)
                 .build());
@@ -48,6 +52,7 @@ public class AuthController {
         NewTokenAuthenticationDTO authDTO = authService.validateRefreshToken(refreshToken);
         return ResponseEntity.ok(OAuth2AccessTokenResponse
                 .withToken(authDTO.getJwt())
+                .expiresIn(jwtExpiryMinutes * 60L)
                 .refreshToken(authDTO.getRefreshToken())
                 .tokenType(OAuth2AccessToken.TokenType.BEARER)
                 .build());

@@ -16,7 +16,17 @@ spring:
   sql:
     init:
       mode: always
-
+  boot:
+    admin:
+      client:
+        url: http://localhost:8081
+        auto-registration: true
+        auto-deregistration: true
+        instance-auth:
+          enabled: true
+        period: 30000
+        username: user
+        password: pass
   datasource:
     username: ${MYSQL_USERNAME1:root}
     url: jdbc:mysql://localhost:3306/novara-user-test?allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
@@ -29,7 +39,8 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.arm.jdbc.bind: ERROR
     org.springframework: ERROR
-    org.springframework.boot.actuate: DEBUG
+    org.springframework.boot.actuate: ERROR
+#    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
     org.springframework.security: ERROR
 
 server:
@@ -48,6 +59,9 @@ management:
       exposure:
         include: "*"
       base-path: /manage
+  endpoint:
+    health:
+      show-details: when_authorized
 
 info:
   app:
